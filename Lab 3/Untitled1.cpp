@@ -1,32 +1,48 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <string>
 using namespace std;
-
-bool isValid(string str, int n)
+bool isValid(const string& word)
 {
-
-	if (!((str[0] >= 'a' && str[0] <= 'z')|| (str[0] >= 'A' && str[0] <= 'Z')|| str[0] == '_'))
+    if (!(isalpha(word[0]) || word[0] == '_'))
+    {
+        cout << "is not an identifier." << endl;
         return false;
+    }
+    for (char c : word)
+    {
+        if (!(isalnum(c) || c == '_'))
+        {
+            cout << "is not an identifier." << endl;
+            return false;
+        }
+    }
 
-	for (int i = 1; i < n; i++) {
-		if (!((str[i] >= 'a' && str[i] <= 'z')|| (str[i] >= 'A' && str[i] <= 'Z')|| (str[i] >= '0' && str[i] <= '9')|| str[i] == '_'))
-			return false;
-	}
+    const string reservedKeywords[] = {
+        "int", "char", "double", "float", "if", "else", "while",
+        "for", "return", "class", "do", "new", "switch", "long",
+        "operator", "template", "break"
+    };
 
-	return true;
+    for (const string& keyword : reservedKeywords)
+    {
+        if (word == keyword)
+        {
+            cout << "is not an identifier." << endl;
+            return false;
+        }
+    }
+
+    return true;
 }
-
 
 int main()
 {
-	string str;
-	int n = str.length();
+    string idntf;
+    getline(cin, idntf);
 
-	cin>>str;
-
-	if (isValid(str, n))
-		cout << "Valid";
-	else
-		cout << "Invalid";
-
-	return 0;
+    if (isValid(idntf))
+    {
+        cout << "'" << idntf << "' is an identifier." << endl;
+    }
+    return 0;
 }
