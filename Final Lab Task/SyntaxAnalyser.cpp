@@ -1,40 +1,53 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <unordered_set>
 #include <algorithm>
 
 using namespace std;
 
-// Define sets for keywords, preprocessor directives, data types, and library functions
-unordered_set<string> keywords = {"auto", "break", "case", "const", "continue", "default", "do", "else", "enum", "extern", "for", "goto", "if", "register", "return", "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "volatile", "while"};
-unordered_set<string> preprocessorDirectives = {"#include", "#define", "#ifdef", "#endif", "#pragma"};
-unordered_set<string> dataTypes = {"int", "char", "float", "double", "bool", "void", "long", "short"};
-unordered_set<string> libraryFunctions = {"iostream", "ifstream", "ofstream", "vector", "algorithm"};
+// List of C++ keywords for reference
+vector<string> keywords = {"auto", "break", "case", "cout", "const", "continue", "default", "do", "else", "enum", "extern", "for", "goto", "if", "register", "return", "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "volatile", "while"};
 
-// Function to check if a string is a keyword
+// List of preprocessor directives
+vector<string> preprocessorDirectives = {"#include", "#define", "#ifdef", "#endif", "#pragma"};
+
+// List of commonly used data types
+vector<string> dataTypes = {"int", "char", "float", "double", "bool", "void", "long", "short"};
+
 bool isKeyword(const string &word) {
-    return keywords.find(word) != keywords.end();
+    return find(keywords.begin(), keywords.end(), word) != keywords.end();
 }
 
-// Function to check if a string is a preprocessor directive
 bool isPreprocessorDirective(const string &word) {
-    return preprocessorDirectives.find(word) != preprocessorDirectives.end();
+    return find(preprocessorDirectives.begin(), preprocessorDirectives.end(), word) != preprocessorDirectives.end();
 }
 
-// Function to check if a string is a data type
 bool isDataType(const string &word) {
-    return dataTypes.find(word) != dataTypes.end();
+    return find(dataTypes.begin(), dataTypes.end(), word) != dataTypes.end();
 }
 
-// Function to check if a string is a library function
+bool isPunctuation(char ch) {
+    return ch == ';' || ch == ',' || ch == '(' || ch == ')' || ch == '{' || ch == '}';
+}
+
+bool isOperator(char ch) {
+    return ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '=' || ch == '<' || ch == '>' || ch == '%';
+}
+
 bool isLibraryFunction(const string &word) {
-    return libraryFunctions.find(word) != libraryFunctions.end();
+    return word == "iostream" || word == "ifstream" || word == "ofstream" || word == "vector" || word == "algorithm";
 }
 
-// Function to check if a string is a variable
+bool isUsingNamespaceStd(const string &line) {
+    return line.find("using namespace std;") != string::npos;
+}
+
+bool isFunction(const string &word) {
+    return word == "main";
+}
+
 bool isVariable(const string &word) {
-    return word.size() == 1 && isalpha(word[0]) && islower(word[0]);
+    return word == "x" || word == "y" || word == "z";
 }
 
 int main() {
@@ -45,63 +58,84 @@ int main() {
     }
 
     string line;
+    bool usingNamespaceStdFound = false; // Flag to indicate if using namespace std is found
     while (getline(file, line)) {
-        string buffer;
-        bool inString = false; // Flag to indicate if currently parsing a string
-        bool inNumber = false; // Flag to indicate if currently parsing a number
-        for (char ch : line) {
-            if (ch == '"' && !inString) {
-                inString = true;
-                buffer += ch;
-            } else if (ch == '"' && inString) {
-                inString = false;
-                buffer += ch;
-                cout << buffer << " is an output statement\n";
-                buffer.clear();
-            } else if (inString) {
-                buffer += ch;
-            } else if (isdigit(ch) && !inNumber) {
-                inNumber = true;
-                buffer += ch;
-            } else if (isdigit(ch) && inNumber) {
-                buffer += ch;
-            } else if (!isdigit(ch) && inNumber) {
-                cout << buffer << " is a constant\n";
-                buffer.clear();
-                inNumber = false;
-                buffer += ch;
-            } else if (isspace(ch)) {
-                // Check if buffer contains a keyword, preprocessor directive, data type, library function, or variable
-                if (!buffer.empty()) {
-                    if (isKeyword(buffer)) {
-                        cout << buffer << " is a reserved keyword\n";
-                    } else if (isPreprocessorDirective(buffer)) {
-                        cout << buffer << " is a preprocessor directive\n";
-                    } else if (isDataType(buffer)) {
-                        cout << buffer << " is a data type\n";
-                    } else if (isLibraryFunction(buffer)) {
-                        cout << buffer << " is a library function\n";
-                    } else if (isVariable(buffer)) {
-                        cout << buffer << " is a variable\n";
-                    }
+        if (isUsingNamespaceStd(line)) {
+            cout << line << " to avoid std:: prefix\n";
+            usingNamespaceStdFound = true;
+        } else {
+            string buffer;
+            bool isMainFound = false;
+            bool inString = false; // Flag to indicate if currently parsing a string
+            bool inNumber = false; // Flag to indicate if currently parsing a number
+            for (char ch : line) {
+                if (ch == '"' && !inString) {
+                    inString = true;
+                    buffer += ch;
+                } else if (ch == '"' && inString) {
+                    inString = false;
+                    buffer += ch;
+                    cout << buffer << " is an output statement\n";
                     buffer.clear();
+                } else if (inString) {
+                    buffer += ch;
+                } else if (isdigit(ch) && !inNumber) {
+                    inNumber = true;
+                    buffer += ch;
+                } else if (isdigit(ch) && inNumber) {
+                    buffer += ch;
+                } else if (!isdigit(ch) && inNumber) {
+                    cout << buffer << " is a constant\n";
+                    buffer.clear();
+                    inNumber = false;
+                    buffer += ch;
+                } else if (ch == ' ' || ch == '\t') {
+                    // Check if buffer contains a keyword, preprocessor directive, data type, library function, function name, or variable
+                    if (!buffer.empty()) {
+                        if (isKeyword(buffer)) {
+                            cout << buffer << " is a reserved keyword\n";
+                        } else if (isPreprocessorDirective(buffer)) {
+                            cout << buffer << " is a preprocessor directive\n";
+                        } else if (isDataType(buffer)) {
+                            cout << buffer << " is a data type\n";
+                        } else if (isLibraryFunction(buffer)) {
+                            cout << buffer << " is a library function\n";
+                        } else if (isFunction(buffer)) {
+                            cout << buffer << "() is a function name\n";
+                            isMainFound = true;
+                        } else if (isVariable(buffer)) {
+                            cout << buffer << " is a variable\n";
+                        }
+                        buffer.clear();
+                    }
+                } else if (isPunctuation(ch)) {
+                    cout << ch << " is a punctuation\n";
+                } else if (isOperator(ch)) {
+                    cout << ch << " is an operator\n";
+                } else {
+                    buffer += ch;
                 }
-            } else {
-                buffer += ch;
             }
-        }
-        // Check buffer at the end of the line
-        if (!buffer.empty()) {
-            if (isKeyword(buffer)) {
-                cout << buffer << " is a reserved keyword\n";
-            } else if (isPreprocessorDirective(buffer)) {
-                cout << buffer << " is a preprocessor directive\n";
-            } else if (isDataType(buffer)) {
-                cout << buffer << " is a data type\n";
-            } else if (isLibraryFunction(buffer)) {
-                cout << buffer << " is a library function\n";
-            } else if (isVariable(buffer)) {
-                cout << buffer << " is a variable\n";
+            // Check buffer at the end of the line
+            if (!buffer.empty()) {
+                if (isKeyword(buffer)) {
+                    cout << buffer << " is a keyword\n";
+                } else if (isPreprocessorDirective(buffer)) {
+                    cout << buffer << " is a preprocessor directive\n";
+                } else if (isDataType(buffer)) {
+                    cout << buffer << " is a data type\n";
+                } else if (isLibraryFunction(buffer)) {
+                    cout << buffer << " is a library function\n";
+                } else if (isFunction(buffer)) {
+                    cout << buffer << "() is a function name\n";
+                    isMainFound = true;
+                } else if (isVariable(buffer)) {
+                    cout << buffer << " is a variable\n";
+                } else if (inNumber) {
+                    cout << buffer << " is a constant\n";
+                } else {
+                    cout << buffer << " is an punctuation\n";
+                }
             }
         }
     }
